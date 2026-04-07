@@ -233,6 +233,11 @@
     background: transparent;
     color: var(--gold);
   }
+  .reservation-cta:hover {
+    background: var(--gold);
+    color: var(--dark-bark);
+    border-color: var(--gold);
+  }
   .hero-scroll {
     position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
     display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
@@ -770,7 +775,7 @@
       <div class="feature-card reveal reveal-delay-1">
         <span class="feature-icon">🚗</span>
         <h3 class="feature-title">Jídlo s sebou</h3>
-        <p class="feature-desc">Nestíháte? Žádný problém. Naše oblíbená jídla si můžete vzít s sebou nebo objednat s donáškou domů.</p>
+        <p class="feature-desc">Nestíháte? Žádný problém. Naše oblíbená jídla si můžete vzít s sebou.</p>
       </div>
       <div class="feature-card reveal reveal-delay-2">
         <span class="feature-icon">😊</span>
@@ -1242,7 +1247,7 @@
           <span class="info-icon">🛵</span>
           <div class="info-row-text">
             <div class="info-row-label">Způsob podávání</div>
-            Jídlo na místě · Jídlo s sebou · Donáška
+            Jídlo na místě · Jídlo s sebou
           </div>
         </div>
 
@@ -1276,7 +1281,7 @@
         <div class="reveal" style="background:var(--dark-bark);padding:2.5rem;margin-top:1.5rem;">
           <h4 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold);margin-bottom:1rem;">Rezervace stolu</h4>
           <p style="color:rgba(245,240,232,0.7);font-size:0.9rem;line-height:1.7;margin-bottom:1.5rem;">Na rezervaci nás kontaktujte telefonicky nebo přes Facebook. Těšíme se na vaši návštěvu!</p>
-          <a href="tel:+420733242045" class="hero-cta" style="border-color:var(--gold);color:var(--gold);display:inline-flex;text-decoration:none;">
+          <a href="tel:+420733242045" class="hero-cta reservation-cta" style="border-color:var(--gold);color:var(--gold);display:inline-flex;text-decoration:none;">
             📞 Zavolat nám
           </a>
         </div>
