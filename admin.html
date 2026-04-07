@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Můj Svět Admin - Denní menu</title>
+  <style>
+    :root {
+      --bg: #f6f2eb;
+      --card: #ffffff;
+      --text: #2f241b;
+      --muted: #7f6c5a;
+      --gold: #c8a96e;
+      --border: #e8dfd2;
+      --danger: #b64040;
+      --ok: #2f7d4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, serif;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+      background: #fff;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 1px solid var(--gold);
+      background: var(--gold);
+      color: #2f241b;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary { background: #fff; }
+    button.danger {
+      border-color: var(--danger);
+      background: var(--danger);
+      color: #fff;
+    }
+    .row {
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .status { font-size: 14px; }
+    .ok { color: var(--ok); }
+    .err { color: var(--danger); }
+    .preview-box {
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 10px;
+      margin-top: 10px;
+      max-height: 260px;
+      overflow: auto;
+      font-size: 14px;
+    }
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Denní menu admin</h1>
+      <p class="muted">Přihlášení přes Supabase. Po uložení se změny projeví na webu po refreshi stránky.</p>
+      <div class="topbar">
+        <div id="authState" class="status">Nepřihlášen</div>
+        <button id="logoutBtn" class="secondary" type="button" style="display:none;">Odhlásit</button>
+      </div>
+    </div>
+
+    <div class="card" id="loginCard">
+      <h2>Přihlášení</h2>
+      <div class="grid">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="admin@email.cz">
+        </div>
+        <div>
+          <label for="password">Heslo</label>
+          <input id="password" type="password" placeholder="********">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="loginBtn" type="button">Přihlásit</button>
+      </div>
+      <div id="loginMsg" class="status"></div>
+    </div>
+
+    <div class="card" id="editorCard" style="display:none;">
+      <h2>Přidat položku</h2>
+      <div class="grid">
+        <div>
+          <label for="menuWeekStart">Platí od</label>
+          <input id="menuWeekStart" type="date">
+        </div>
+        <div>
+          <label for="menuWeekEnd">Platí do</label>
+          <input id="menuWeekEnd" type="date">
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="menuPrice">Cena</label>
+          <input id="menuPrice" type="text" placeholder="149 Kč">
+        </div>
+        <div></div>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="menuName">Název</label>
+          <input id="menuName" type="text" placeholder="Smažený sýr">
+        </div>
+        <div>
+          <label for="menuSort">Pořadí</label>
+          <input id="menuSort" type="number" value="10">
+        </div>
+      </div>
+      <div>
+        <label for="menuDesc">Popis</label>
+        <textarea id="menuDesc" placeholder="Krátký popis"></textarea>
+      </div>
+      <div class="actions">
+        <button id="addBtn" type="button">Přidat položku</button>
+      </div>
+      <div id="editorMsg" class="status"></div>
+    </div>
+
+    <div class="card" id="bulkCard" style="display:none;">
+      <h2>Vložit denní menu jako text (auto parser)</h2>
+      <p class="muted">Sem vložte text podobný Facebook postu. Systém ho zkusí automaticky rozdělit na položky a ceny. Když parser nic nerozpozná, můžete uložit fallback jako čistý text.</p>
+      <div class="grid">
+        <div>
+          <label for="bulkWeekStart">Platí od</label>
+          <input id="bulkWeekStart" type="date">
+        </div>
+        <div>
+          <label for="bulkWeekEnd">Platí do</label>
+          <input id="bulkWeekEnd" type="date">
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="bulkStartOrder">Počáteční pořadí</label>
+          <input id="bulkStartOrder" type="number" value="10">
+        </div>
+        <div></div>
+      </div>
+      <div>
+        <label for="bulkText">Text menu</label>
+        <textarea id="bulkText" placeholder="Sem vložte celé denní menu..." style="min-height:160px;"></textarea>
+      </div>
+      <div class="actions">
+        <button id="parsePreviewBtn" type="button">Náhled parsování</button>
+        <button id="saveParsedBtn" type="button">Uložit jako strukturované</button>
+        <button id="saveRawBtn" class="secondary" type="button">Uložit fallback (čistý text)</button>
+      </div>
+      <div id="bulkMsg" class="status"></div>
+      <div id="bulkPreview" class="preview-box"></div>
+    </div>
+
+    <div class="card" id="listCard" style="display:none;">
+      <h2>Aktuální položky</h2>
+      <div id="menuRows"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Fill these values from Supabase project settings.
+    const SUPABASE_URL = 'https://popcqqikhdjfedqkxblz.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_zim1Abez80hyo2YsbgeJNw_Krj-lMP_';
+
+    const authState = document.getElementById('authState');
+    const loginCard = document.getElementById('loginCard');
+    const editorCard = document.getElementById('editorCard');
+    const bulkCard = document.getElementById('bulkCard');
+    const listCard = document.getElementById('listCard');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginMsg = document.getElementById('loginMsg');
+    const editorMsg = document.getElementById('editorMsg');
+    const bulkMsg = document.getElementById('bulkMsg');
+    const bulkPreview = document.getElementById('bulkPreview');
+    const menuRows = document.getElementById('menuRows');
+    const saveParsedBtn = document.getElementById('saveParsedBtn');
+    const saveRawBtn = document.getElementById('saveRawBtn');
+    let isSaving = false;
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      authState.textContent = 'Chybí SUPABASE_URL / SUPABASE_ANON_KEY v admin.html';
+      authState.className = 'status err';
+      loginCard.style.display = 'none';
+    }
+
+    const sb = (SUPABASE_URL && SUPABASE_ANON_KEY)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    function setMessage(el, text, isError) {
+      el.textContent = text || '';
+      el.className = isError ? 'status err' : 'status ok';
+    }
+
+    async function withTimeout(promise, ms, label) {
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), ms);
+      });
+      try {
+        return await Promise.race([promise, timeout]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function setLoggedInState(user) {
+      const logged = !!user;
+      authState.textContent = logged ? `Přihlášen: ${user.email}` : 'Nepřihlášen';
+      authState.className = 'status ' + (logged ? 'ok' : '');
+      loginCard.style.display = logged ? 'none' : 'block';
+      editorCard.style.display = logged ? 'block' : 'none';
+      bulkCard.style.display = logged ? 'block' : 'none';
+      listCard.style.display = logged ? 'block' : 'none';
+      logoutBtn.style.display = logged ? 'inline-block' : 'none';
+    }
+
+    function clearForm() {
+      document.getElementById('menuWeekStart').value = '';
+      document.getElementById('menuWeekEnd').value = '';
+      document.getElementById('menuPrice').value = '';
+      document.getElementById('menuName').value = '';
+      document.getElementById('menuSort').value = 10;
+      document.getElementById('menuDesc').value = '';
+    }
+
+    function rowHtml(item) {
+      return `
+        <div class="row">
+          <div><strong>${item.name}</strong> - ${item.price || ''}</div>
+          <div class="muted">${item.description || ''}</div>
+          <div class="muted">Platnost: ${item.week_start_date || '-'} až ${item.week_end_date || '-'} | Pořadí: ${item.sort_order || 0} | Aktivní: ${item.is_active ? 'ano' : 'ne'}</div>
+          <div class="actions">
+            <button class="secondary" data-action="toggle" data-id="${item.id}" data-active="${item.is_active}">${item.is_active ? 'Skrýt' : 'Zobrazit'}</button>
+            <button class="danger" data-action="delete" data-id="${item.id}">Smazat</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadRows() {
+      if (!sb) return;
+      const { data, error } = await withTimeout(
+        sb
+          .from('daily_menu')
+          .select('*')
+          .order('sort_order', { ascending: true })
+          .order('id', { ascending: true }),
+        12000,
+        'Load rows'
+      );
+      if (error) {
+        setMessage(editorMsg, 'Načtení položek selhalo: ' + error.message, true);
+        return;
+      }
+      menuRows.innerHTML = data.length ? data.map(rowHtml).join('') : '<p class="muted">Zatím žádné položky.</p>';
+    }
+
+    async function addRow() {
+      const payload = {
+        week_start_date: document.getElementById('menuWeekStart').value || null,
+        week_end_date: document.getElementById('menuWeekEnd').value || null,
+        label_date: '',
+        name: document.getElementById('menuName').value.trim(),
+        description: document.getElementById('menuDesc').value.trim(),
+        price: document.getElementById('menuPrice').value.trim(),
+        sort_order: Number(document.getElementById('menuSort').value || 0),
+        is_active: true
+      };
+      if (!payload.name) {
+        setMessage(editorMsg, 'Název je povinný.', true);
+        return;
+      }
+      if (payload.week_start_date && payload.week_end_date && payload.week_start_date > payload.week_end_date) {
+        setMessage(editorMsg, 'Datum "Platí od" musí být menší nebo stejné jako "Platí do".', true);
+        return;
+      }
+      const { error } = await withTimeout(
+        sb.from('daily_menu').insert(payload),
+        12000,
+        'Insert row'
+      );
+      if (error) {
+        setMessage(editorMsg, 'Uložení selhalo: ' + error.message, true);
+        return;
+      }
+      setMessage(editorMsg, 'Položka přidána.', false);
+      clearForm();
+      await loadRows();
+    }
+
+    function cleanMenuLine(line) {
+      return line
+        .replace(/^[\u2022\-]\s*/, '')
+        .replace(/^\d+\.\s*/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function parseMenuText(rawText, startOrder) {
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(cleanMenuLine)
+        .filter(Boolean);
+      const items = [];
+      let section = '';
+      let order = Number(startOrder || 10);
+      const priceRegex = /[-–—]?\s*(\d{2,4})\s*Kč\b/i;
+      for (const line of lines) {
+        if (/^\s*(pol[eé]vka|hlavn[ií]\s*j[ií]dla?|dezert|n[aá]poje)\s*:?\s*$/i.test(line)) {
+          section = line.replace(/:$/, '').trim();
+          continue;
+        }
+        const priceMatch = line.match(priceRegex);
+        const price = priceMatch ? `${priceMatch[1]} Kč` : '';
+        const namePart = line.replace(priceRegex, '').replace(/\s*[-–—]\s*$/, '').trim();
+        if (!namePart) continue;
+        const isSoupLike = /^pol[eé]vka/i.test(section) || /^pol[eé]vka/i.test(namePart);
+        const item = {
+          name: namePart,
+          description: section && !isSoupLike ? section : '',
+          price,
+          sort_order: order,
+          is_active: true
+        };
+        items.push(item);
+        order += 10;
+      }
+      return items;
+    }
+
+    function renderPreview(items) {
+      if (!items.length) {
+        bulkPreview.textContent = 'Parser nenašel žádné položky s jistotou. Můžete použít fallback.';
+        return;
+      }
+      bulkPreview.innerHTML = items.map(i => {
+        const desc = i.description ? ` <span class="muted">(${i.description})</span>` : '';
+        const price = i.price ? ` - <strong>${i.price}</strong>` : '';
+        return `<div>• ${i.name}${desc}${price}</div>`;
+      }).join('');
+    }
+
+    async function replaceActiveWith(newRows, labelDate) {
+      const { error: disableErr } = await withTimeout(
+        sb
+          .from('daily_menu')
+          .update({ is_active: false })
+          .eq('is_active', true),
+        12000,
+        'Disable active rows'
+      );
+      if (disableErr) throw disableErr;
+      const payload = newRows.map((row, idx) => ({
+        label_date: '',
+        week_start_date: row.week_start_date || null,
+        week_end_date: row.week_end_date || null,
+        name: row.name,
+        description: row.description || '',
+        price: row.price || '',
+        sort_order: Number(row.sort_order || (idx + 1) * 10),
+        is_active: true
+      }));
+      let { error: insertErr } = await withTimeout(
+        sb.from('daily_menu').insert(payload),
+        12000,
+        'Insert parsed rows'
+      );
+      if (!insertErr) return;
+
+      // Backward compatibility when DB columns for week range are not added yet.
+      const isMissingWeekColumn =
+        /week_start_date|week_end_date|column/i.test(insertErr.message || '');
+      if (isMissingWeekColumn) {
+        const legacyLabel = newRows[0]?.week_start_date || newRows[0]?.week_end_date
+          ? `${newRows[0]?.week_start_date || '?'} - ${newRows[0]?.week_end_date || '?'}`
+          : (labelDate || '');
+        const legacyPayload = newRows.map((row, idx) => ({
+          label_date: legacyLabel,
+          name: row.name,
+          description: row.description || '',
+          price: row.price || '',
+          sort_order: Number(row.sort_order || (idx + 1) * 10),
+          is_active: true
+        }));
+        const legacyInsert = await withTimeout(
+          sb.from('daily_menu').insert(legacyPayload),
+          12000,
+          'Insert legacy rows'
+        );
+        if (legacyInsert.error) throw legacyInsert.error;
+        return;
+      }
+
+      throw insertErr;
+    }
+
+    function setSavingState(saving) {
+      isSaving = saving;
+      saveParsedBtn.disabled = saving;
+      saveRawBtn.disabled = saving;
+      saveParsedBtn.style.opacity = saving ? '0.65' : '1';
+      saveRawBtn.style.opacity = saving ? '0.65' : '1';
+      saveParsedBtn.style.cursor = saving ? 'not-allowed' : 'pointer';
+      saveRawBtn.style.cursor = saving ? 'not-allowed' : 'pointer';
+    }
+
+    async function previewParse() {
+      const text = document.getElementById('bulkText').value.trim();
+      const startOrder = Number(document.getElementById('bulkStartOrder').value || 10);
+      const items = parseMenuText(text, startOrder);
+      renderPreview(items);
+      if (!items.length) {
+        setMessage(bulkMsg, 'Parser nic nenašel. Použijte fallback tlačítko.', true);
+        return;
+      }
+      setMessage(bulkMsg, `Parser našel ${items.length} položek.`, false);
+    }
+
+    async function saveParsed() {
+      if (isSaving) return;
+      setSavingState(true);
+      setMessage(bulkMsg, 'Ukládám...', false);
+      const text = document.getElementById('bulkText').value.trim();
+      const weekStart = document.getElementById('bulkWeekStart').value || null;
+      const weekEnd = document.getElementById('bulkWeekEnd').value || null;
+      const startOrder = Number(document.getElementById('bulkStartOrder').value || 10);
+      const items = parseMenuText(text, startOrder);
+      renderPreview(items);
+      if (!items.length) {
+        setMessage(bulkMsg, 'Parser nenašel položky. Použijte fallback.', true);
+        setSavingState(false);
+        return;
+      }
+      if (weekStart && weekEnd && weekStart > weekEnd) {
+        setMessage(bulkMsg, 'Datum "Platí od" musí být menší nebo stejné jako "Platí do".', true);
+        setSavingState(false);
+        return;
+      }
+      try {
+        const withDates = items.map(item => ({ ...item, week_start_date: weekStart, week_end_date: weekEnd }));
+        await replaceActiveWith(withDates, '');
+        setMessage(bulkMsg, 'Uloženo jako strukturované menu.', false);
+        await loadRows();
+      } catch (err) {
+        console.error('Save parsed failed:', err);
+        setMessage(bulkMsg, 'Uložení selhalo: ' + err.message, true);
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    async function saveRawFallback() {
+      if (isSaving) return;
+      setSavingState(true);
+      setMessage(bulkMsg, 'Ukládám fallback...', false);
+      const text = document.getElementById('bulkText').value.trim();
+      const weekStart = document.getElementById('bulkWeekStart').value || null;
+      const weekEnd = document.getElementById('bulkWeekEnd').value || null;
+      if (!text) {
+        setMessage(bulkMsg, 'Nejdřív vložte text menu.', true);
+        setSavingState(false);
+        return;
+      }
+      if (weekStart && weekEnd && weekStart > weekEnd) {
+        setMessage(bulkMsg, 'Datum "Platí od" musí být menší nebo stejné jako "Platí do".', true);
+        setSavingState(false);
+        return;
+      }
+      try {
+        await replaceActiveWith([{
+          name: '__RAW_TEXT__',
+          description: text,
+          price: '',
+          sort_order: 10,
+          week_start_date: weekStart,
+          week_end_date: weekEnd,
+          is_active: true
+        }], '');
+        setMessage(bulkMsg, 'Uloženo jako fallback čistý text.', false);
+        bulkPreview.textContent = 'Uloženo fallback zobrazení.';
+        await loadRows();
+      } catch (err) {
+        console.error('Save fallback failed:', err);
+        setMessage(bulkMsg, 'Fallback uložení selhalo: ' + err.message, true);
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    async function toggleActive(id, isActive) {
+      const { error } = await withTimeout(
+        sb.from('daily_menu').update({ is_active: !isActive }).eq('id', id),
+        12000,
+        'Toggle row'
+      );
+      if (error) {
+        setMessage(editorMsg, 'Změna stavu selhala: ' + error.message, true);
+        return;
+      }
+      await loadRows();
+    }
+
+    async function deleteRow(id) {
+      const ok = window.confirm('Opravdu smazat položku?');
+      if (!ok) return;
+      const { error } = await withTimeout(
+        sb.from('daily_menu').delete().eq('id', id),
+        12000,
+        'Delete row'
+      );
+      if (error) {
+        setMessage(editorMsg, 'Mazání selhalo: ' + error.message, true);
+        return;
+      }
+      await loadRows();
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        setMessage(loginMsg, 'Přihlášení selhalo: ' + error.message, true);
+        return;
+      }
+      setMessage(loginMsg, 'Přihlášení OK.', false);
+    }
+
+    async function logout() {
+      await sb.auth.signOut();
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('addBtn').addEventListener('click', addRow);
+    document.getElementById('parsePreviewBtn').addEventListener('click', previewParse);
+    document.getElementById('saveParsedBtn').addEventListener('click', saveParsed);
+    document.getElementById('saveRawBtn').addEventListener('click', saveRawFallback);
+    logoutBtn.addEventListener('click', logout);
+
+    menuRows.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      const action = btn.dataset.action;
+      if (action === 'toggle') {
+        const isActive = btn.dataset.active === 'true';
+        await toggleActive(id, isActive);
+      }
+      if (action === 'delete') {
+        await deleteRow(id);
+      }
+    });
+
+    async function bootstrap() {
+      if (!sb) return;
+      const { data } = await sb.auth.getUser();
+      setLoggedInState(data.user);
+      if (data.user) await loadRows();
+      sb.auth.onAuthStateChange(async (_, session) => {
+        const user = session?.user || null;
+        setLoggedInState(user);
+        if (user) await loadRows();
+      });
+
+      // Refresh rows when tab becomes active again.
+      document.addEventListener('visibilitychange', async () => {
+        if (document.hidden) return;
+        await loadRows();
+      });
+    }
+    bootstrap();
+  </script>
+</body>
+</html>

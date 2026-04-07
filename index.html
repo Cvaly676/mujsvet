@@ -469,6 +469,73 @@
     margin-top: -1rem;
     margin-bottom: 1.5rem;
   }
+  .daily-menu-wrap {
+    margin: 0 auto 2.2rem;
+    padding: 1.1rem 1.2rem;
+    border: 1px solid rgba(90,62,43,0.14);
+    background: rgba(255,255,255,0.55);
+    max-width: 860px;
+  }
+  .daily-menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.9rem;
+    border-bottom: 1px solid rgba(90,62,43,0.12);
+    padding-bottom: 0.6rem;
+  }
+  .daily-menu-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--dark-bark);
+    font-size: 1.45rem;
+  }
+  .daily-menu-date {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--moss);
+  }
+  .daily-menu-list {
+    display: grid;
+    gap: 0.55rem;
+  }
+  .daily-menu-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(90,62,43,0.08);
+    padding-bottom: 0.45rem;
+  }
+  .daily-menu-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: var(--dark-bark);
+  }
+  .daily-menu-price {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    white-space: nowrap;
+    font-size: 1.05rem;
+  }
+  .daily-menu-desc {
+    font-size: 0.92rem;
+    color: var(--moss);
+    margin-top: 0.1rem;
+  }
+  .daily-menu-empty {
+    font-size: 0.92rem;
+    color: var(--moss);
+    font-style: italic;
+  }
+  .daily-menu-raw {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    line-height: 1.55;
+    color: var(--dark-bark);
+  }
 
   /* ========== GALLERY ========== */
   .gallery {
@@ -802,6 +869,15 @@
       <h2 class="section-title reveal">Co <em>nabízíme</em></h2>
       <div class="divider-line reveal"></div>
       <p class="reveal" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--moss);max-width:550px;margin:0 auto;">Vyberte si z naší bohaté nabídky pokrmů a nápojů. Ceny jsou přibližné, aktuální nabídku poledního menu naleznete přímo v restauraci.</p>
+    </div>
+    <div class="daily-menu-wrap reveal">
+      <div class="daily-menu-head">
+        <h3 class="daily-menu-title">Denní menu</h3>
+        <span class="daily-menu-date" id="dailyMenuDate">Dnes</span>
+      </div>
+      <div class="daily-menu-list" id="dailyMenuList">
+        <p class="daily-menu-empty">Denní menu právě připravujeme.</p>
+      </div>
     </div>
 
     <div class="menu-tabs reveal">
@@ -1304,7 +1380,18 @@
   <p class="footer-copy">© 2025 Můj Svět Restaurant & Coffee · Záhumenní 1477/4c, Kopřivnice · 733 242 045</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // Supabase public config
+  // Example:
+  // const SUPABASE_URL = 'https://xyzcompany.supabase.co';
+  // const SUPABASE_ANON_KEY = 'eyJ...';
+  const SUPABASE_URL = 'https://popcqqikhdjfedqkxblz.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_zim1Abez80hyo2YsbgeJNw_Krj-lMP_';
+  const supabaseClient = (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
   // Loader
   window.addEventListener('load', () => {
     setTimeout(() => {
@@ -1343,6 +1430,131 @@
     document.getElementById('tab-' + tabId).classList.add('active');
     event.target.classList.add('active');
   }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatDailyDate(items) {
+    function formatCzDate(isoDate) {
+      if (!isoDate) return '?';
+      const parts = isoDate.split('-');
+      if (parts.length !== 3) return isoDate;
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
+    const firstRange = items.find(i => i.week_start_date || i.week_end_date);
+    if (firstRange) {
+      const start = formatCzDate(firstRange.week_start_date);
+      const end = formatCzDate(firstRange.week_end_date);
+      return `Platí ${start} - ${end}`;
+    }
+    const firstDate = items.find(i => i.label_date)?.label_date;
+    return firstDate || 'Dnes';
+  }
+
+  function inDateRange(item, todayIso) {
+    const start = item.week_start_date || '';
+    const end = item.week_end_date || '';
+    if (!start && !end) return true;
+    if (start && todayIso < start) return false;
+    if (end && todayIso > end) return false;
+    return true;
+  }
+
+  function groupByRange(items) {
+    const map = new Map();
+    items.forEach(item => {
+      const key = `${item.week_start_date || ''}|${item.week_end_date || ''}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    });
+    return Array.from(map.entries()).map(([key, rows]) => {
+      const [start, end] = key.split('|');
+      return { key, start, end, rows };
+    });
+  }
+
+  function pickBestRange(items, todayIso) {
+    const groups = groupByRange(items);
+    if (!groups.length) return [];
+
+    const current = groups.find(g => {
+      if (!g.start && !g.end) return true;
+      if (g.start && todayIso < g.start) return false;
+      if (g.end && todayIso > g.end) return false;
+      return true;
+    });
+    if (current) return current.rows;
+
+    const future = groups
+      .filter(g => g.start && g.start > todayIso)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    if (future.length) return future[0].rows;
+
+    const past = groups
+      .filter(g => g.end && g.end < todayIso)
+      .sort((a, b) => b.end.localeCompare(a.end));
+    if (past.length) return past[0].rows;
+
+    return groups[0].rows;
+  }
+
+  function renderDailyMenu(items) {
+    const list = document.getElementById('dailyMenuList');
+    const dateLabel = document.getElementById('dailyMenuDate');
+    if (!list || !dateLabel) return;
+    if (!items.length) {
+      list.innerHTML = '<p class="daily-menu-empty">Denní menu právě připravujeme.</p>';
+      dateLabel.textContent = 'Dnes';
+      return;
+    }
+    const rawItem = items.find(item => item.name === '__RAW_TEXT__');
+    if (rawItem) {
+      dateLabel.textContent = rawItem.label_date || 'Dnes';
+      list.innerHTML = `<pre class="daily-menu-raw">${escapeHtml(rawItem.description || '')}</pre>`;
+      return;
+    }
+    dateLabel.textContent = formatDailyDate(items);
+    list.innerHTML = items.map(item => `
+      <div class="daily-menu-row">
+        <div>
+          <div class="daily-menu-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="daily-menu-desc">${escapeHtml(item.description)}</div>` : ''}
+        </div>
+        <div class="daily-menu-price">${escapeHtml(item.price)}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadDailyMenu() {
+    if (!supabaseClient) {
+      renderDailyMenu([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabaseClient
+        .from('daily_menu')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('id', { ascending: true });
+      if (error) throw error;
+      const allItems = data || [];
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const items = pickBestRange(allItems, todayIso);
+      renderDailyMenu(items);
+    } catch (err) {
+      renderDailyMenu([]);
+      console.error('Daily menu load failed:', err);
+    }
+  }
+  loadDailyMenu();
 
   // Scroll reveal
   const revealEls = document.querySelectorAll('.reveal');
