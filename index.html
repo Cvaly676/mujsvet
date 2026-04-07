@@ -233,9 +233,17 @@
     background: transparent;
     color: var(--gold);
   }
-  .reservation-cta:hover {
+  .reservation-cta,
+  .reservation-cta:visited {
+    color: var(--gold) !important;
+    -webkit-text-fill-color: var(--gold);
+    background: transparent;
+  }
+  .reservation-cta:hover,
+  .reservation-cta:focus-visible {
     background: var(--gold);
-    color: var(--dark-bark);
+    color: var(--dark-bark) !important;
+    -webkit-text-fill-color: var(--dark-bark);
     border-color: var(--gold);
   }
   .hero-scroll {
